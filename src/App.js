@@ -1,15 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@/App.css";
 import axios from "axios";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Send, Plus, MessageSquare, FileText, Upload, Trash2,
-  BookOpen, Sparkles, Settings, File, ChevronRight, Loader2,
-  X, CheckCircle, AlertCircle
+  Sparkles, Settings, File, ChevronRight, Loader2,
+  X, CheckCircle, AlertCircle, Menu, ChevronLeft, Video,
+  Cloud, Zap, Brain
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminPanel from "./AdminPanel";
@@ -45,22 +48,19 @@ async function clearDocuments() {
 const VideoModal = ({ url, onClose }) => {
   if (!url) return null;
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="relative w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"
-        >
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content video-modal" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="modal-close-btn">
           <X size={20} />
         </button>
-        <video 
-          key={url} // This forces the player to reload when URL changes
-          className="w-full h-auto max-h-[85vh]"
-          controls 
-          controlsList="nodownload" 
+        <video
+          key={url}
+          className="video-player"
+          controls
+          controlsList="nodownload"
           onContextMenu={(e) => e.preventDefault()}
           autoPlay
-          src={url} // Use src directly for proxy streams
+          src={url}
         >
           Your browser does not support the video tag.
         </video>
@@ -74,33 +74,92 @@ const PdfModal = ({ url, onClose }) => {
   if (!url) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={onClose}>
-      <div 
-        className="relative w-full h-full max-w-5xl bg-gray-100 rounded-xl overflow-hidden shadow-2xl flex flex-col" 
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 border-b flex justify-between items-center bg-white">
-          <div className="flex items-center gap-2 text-gray-700">
-            <FileText size={20} className="text-blue-600" />
-            <span className="font-semibold">Define Edge Document</span>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content pdf-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pdf-modal-header">
+          <div className="pdf-modal-title">
+            <FileText size={20} />
+            <span>RootStock Document Viewer</span>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-all"
-          >
+          <button onClick={onClose} className="modal-close-btn">
             <X size={24} />
           </button>
         </div>
-
-        {/* PDF Container - ContextMenu Disabled to prevent "Save Image As" */}
-        <div 
-          className="flex-1 overflow-y-auto relative p-4"
-          onContextMenu={(e) => e.preventDefault()} 
-        >
+        <div className="pdf-viewer-container" onContextMenu={(e) => e.preventDefault()}>
           <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
             <Viewer fileUrl={url} />
           </Worker>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Upload Zone Component ---
+const UploadZone = ({ onFileSelect, isProcessing }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      onFileSelect(files[0]);
+    }
+  };
+
+  const handleFileInput = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      onFileSelect(files[0]);
+    }
+  };
+
+  return (
+    <div
+      className={`upload-zone ${isDragging ? 'dragging' : ''} ${isProcessing ? 'processing' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={() => !isProcessing && fileInputRef.current?.click()}
+      data-testid="upload-zone"
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.mp4"
+        onChange={handleFileInput}
+        style={{ display: 'none' }}
+        disabled={isProcessing}
+      />
+      <div className="upload-icon">
+        {isProcessing ? (
+          <Loader2 size={40} className="animate-spin" />
+        ) : (
+          <Cloud size={40} />
+        )}
+      </div>
+      <h3 className="upload-title">
+        {isProcessing ? 'Processing...' : 'Upload PDF or Video'}
+      </h3>
+      <p className="upload-subtitle">
+        {isProcessing
+          ? 'Please wait while we process your file'
+          : 'Drag & drop your files here or click to browse'}
+      </p>
+      <div className="upload-formats">
+        <span className="format-badge">PDF</span>
+        <span className="format-badge">MP4</span>
       </div>
     </div>
   );
@@ -112,12 +171,15 @@ function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showSources, setShowSources] = useState(null);
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
-  const [activePdfUrl, setActivePdfUrl] = useState(null); // New state for PDF
+  const [activePdfUrl, setActivePdfUrl] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [documents, setDocuments] = useState([]);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -129,8 +191,17 @@ function ChatInterface() {
 
   useEffect(() => {
     loadSessions();
+    loadDocuments();
   }, []);
 
+  const loadDocuments = async () => {
+    try {
+      const docs = await listDocuments();
+      setDocuments(docs);
+    } catch (error) {
+      console.error("Error loading documents:", error);
+    }
+  };
 
   const loadSessions = async () => {
     try {
@@ -153,6 +224,7 @@ function ChatInterface() {
       setSessions([newSession, ...sessions]);
       setCurrentSession(newSession);
       setMessages([]);
+      toast.success("New chat created!");
     } catch (error) {
       console.error("Error creating session:", error);
       toast.error("Failed to create new chat");
@@ -169,8 +241,51 @@ function ChatInterface() {
     }
   };
 
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    setIsProcessing(true);
+    setUploadProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
+
+    try {
+      const result = await uploadPDF(file);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      toast.success(
+        <div>
+          <CheckCircle className="inline mr-2" size={16} />
+          {file.name} uploaded successfully!
+        </div>
+      );
+      
+      await loadDocuments();
+      
+      setTimeout(() => {
+        setUploadProgress(0);
+        setIsProcessing(false);
+      }, 1000);
+    } catch (error) {
+      clearInterval(progressInterval);
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file");
+      setUploadProgress(0);
+      setIsProcessing(false);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !currentSession) return;
+    if (!inputMessage.trim() || !currentSession || isProcessing) return;
 
     const userMsg = inputMessage;
     setInputMessage("");
@@ -220,210 +335,271 @@ function ChatInterface() {
 
   return (
     <>
-      <div className="chat-container">
+      <div className="chat-container-premium">
         {/* Sidebar */}
-        <div className="sidebar">
-          <div className="sidebar-header">
-            <div className="brand">
-              <FileText className="brand-icon" />
-              <div>
-                <h1 className="brand-title">PDF Assistant</h1>
-                <p className="brand-subtitle">RAG Chatbot</p>
+        <div className={`sidebar-premium ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="sidebar-header-premium">
+            <div className="brand-premium">
+              <div className="brand-icon-premium">
+                <Brain size={24} />
               </div>
+              {!sidebarCollapsed && (
+                <div className="brand-text">
+                  <h1 className="brand-title-premium">RootStock</h1>
+                  <p className="brand-subtitle-premium">Multi-PDF AI Assistant</p>
+                </div>
+              )}
             </div>
-            <Button onClick={createNewSession} className="new-chat-btn">
-              <Plus size={18} />
-              New Chat
-            </Button>
-            <Button
-              onClick={() => setShowAdmin(true)}
-              style={{
-                width: "100%",
-                marginTop: "12px",
-                background: "var(--definedge-blue)",
-                color: "white",
-                height: "40px",
-                borderRadius: "10px",
-                fontSize: "14px",
-              }}
-            >
-              <Settings size={16} style={{ marginRight: "6px" }} />
-              Admin Panel
-            </Button>
+            
+            {!sidebarCollapsed && (
+              <>
+                <Button onClick={createNewSession} className="new-chat-btn-premium" data-testid="new-chat-button">
+                  <Plus size={18} />
+                  <span>New Chat</span>
+                </Button>
+                <Button
+                  onClick={() => setShowAdmin(true)}
+                  className="admin-btn-premium"
+                  data-testid="admin-panel-button"
+                >
+                  <Settings size={16} />
+                  <span>Admin Panel</span>
+                </Button>
+              </>
+            )}
           </div>
 
-          <ScrollArea className="sessions-list">
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                className={`session-item ${currentSession?.id === session.id ? "active" : ""}`}
-                onClick={() => selectSession(session)}
-              >
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            data-testid="sidebar-toggle"
+          >
+            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
+
+          {!sidebarCollapsed && (
+            <ScrollArea className="sessions-list-premium">
+              <div className="sessions-header">
                 <MessageSquare size={16} />
-                <span className="session-title">{session.title}</span>
+                <span>Recent Chats</span>
               </div>
-            ))}
-          </ScrollArea>
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`session-item-premium ${currentSession?.id === session.id ? 'active' : ''}`}
+                  onClick={() => selectSession(session)}
+                  data-testid={`session-${session.id}`}
+                >
+                  <MessageSquare size={16} />
+                  <span className="session-title-premium">{session.title}</span>
+                </div>
+              ))}
+            </ScrollArea>
+          )}
         </div>
 
         {/* Main Chat Area */}
-        <div className="main-chat">
+        <div className="main-chat-premium">
+          {/* Upload Zone - Show when processing */}
+          {isProcessing && (
+            <div className="processing-overlay">
+              <div className="processing-card">
+                <Loader2 size={48} className="animate-spin processing-spinner" />
+                <h3>Processing Your File</h3>
+                <p>Analyzing and indexing content...</p>
+                <Progress value={uploadProgress} className="processing-progress" />
+                <span className="progress-text">{uploadProgress}%</span>
+              </div>
+            </div>
+          )}
+
           {messages.length === 0 ? (
-            <div className="welcome-screen">
-              <div className="welcome-content">
-                <div className="welcome-icon">
+            <div className="welcome-screen-premium">
+              <div className="welcome-content-premium">
+                <div className="welcome-icon-premium">
                   <Sparkles size={48} />
+                  <div className="icon-glow"></div>
                 </div>
-                <h2 className="welcome-title">Welcome to PDF Assistant</h2>
-                <p className="welcome-subtitle">
-                  Upload your PDF documents and ask questions about their content.
-                  I'll find relevant information and provide answers with source citations.
+                <h2 className="welcome-title-premium">Welcome to RootStock AI</h2>
+                <p className="welcome-subtitle-premium">
+                  Your intelligent multi-PDF assistant powered by advanced RAG technology.
+                  Upload documents and ask questions to get instant, accurate answers.
                 </p>
-                <div className="welcome-examples">
-                  <div className="example-card">
+                
+                <UploadZone onFileSelect={handleFileUpload} isProcessing={isProcessing} />
+
+                {documents.length > 0 && (
+                  <div className="documents-list-welcome">
+                    <h4><File size={16} /> Indexed Documents ({documents.length})</h4>
+                    <div className="doc-badges">
+                      {documents.slice(0, 5).map((doc, idx) => (
+                        <span key={idx} className="doc-badge">
+                          <FileText size={12} />
+                          {doc.filename || doc}
+                        </span>
+                      ))}
+                      {documents.length > 5 && (
+                        <span className="doc-badge more">+{documents.length - 5} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="welcome-features">
+                  <div className="feature-card-premium">
                     <Upload size={20} />
-                    <span>"Upload a PDF to get started"</span>
+                    <span>Upload Multiple PDFs</span>
                   </div>
-                  <div className="example-card">
-                    <BookOpen size={20} />
-                    <span>"What is the main topic?"</span>
+                  <div className="feature-card-premium">
+                    <Zap size={20} />
+                    <span>Instant AI Responses</span>
                   </div>
-                  <div className="example-card">
-                    <MessageSquare size={20} />
-                    <span>"Summarize the document"</span>
+                  <div className="feature-card-premium">
+                    <FileText size={20} />
+                    <span>Source Citations</span>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <ScrollArea className="messages-area">
-              <div className="messages-container">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`message ${msg.role}`}>
-                    <div className="message-avatar">
-                      {msg.role === "user" ? (
-                        <div className="user-avatar">You</div>
-                      ) : (
-                        <FileText size={20} />
-                      )}
-                    </div>
+            <>
+              <div className="chat-header-premium">
+                <div className="chat-header-left">
+                  <Zap size={20} />
+                  <span>{currentSession?.title || 'Chat Session'}</span>
+                </div>
+                <div className="chat-header-right">
+                  <button
+                    className="upload-btn-compact"
+                    onClick={() => document.getElementById('file-upload-hidden')?.click()}
+                    disabled={isProcessing}
+                    data-testid="upload-button"
+                  >
+                    <Upload size={16} />
+                    <span>Upload</span>
+                  </button>
+                  <input
+                    id="file-upload-hidden"
+                    type="file"
+                    accept=".pdf,.mp4"
+                    onChange={(e) => handleFileUpload(e.target.files[0])}
+                    style={{ display: 'none' }}
+                    disabled={isProcessing}
+                  />
+                </div>
+              </div>
 
-                    <div className="message-content">
-                      <p className="message-text">{msg.content}</p>
+              <ScrollArea className="messages-area-premium">
+                <div className="messages-container-premium">
+                  {messages.map((msg, index) => (
+                    <div key={index} className={`message-premium ${msg.role}`} data-testid={`message-${index}`}>
+                      <div className="message-avatar-premium">
+                        {msg.role === "user" ? (
+                          <div className="user-avatar-premium">You</div>
+                        ) : (
+                          <Brain size={20} />
+                        )}
+                      </div>
 
-                      {/* Source citations with PDF/Video Protection */}
-                      {Array.isArray(msg.sources) && msg.sources.length > 0 && (
-                        <div className="sources-container">
-                          <button
-                            className="sources-toggle"
-                            onClick={() =>
-                              setShowSources(showSources === index ? null : index)
-                            }
-                          >
-                            <File size={14} />
-                            {msg.sources.length} source
-                            {msg.sources.length > 1 ? "s" : ""}
-                            <ChevronRight
-                              size={14}
-                              style={{
-                                transform:
-                                  showSources === index ? "rotate(90deg)" : "none",
-                                transition: "transform 0.2s",
-                              }}
-                            />
-                          </button>
-
-                          {showSources === index && (
-                            <div className="sources-list">
-                              {[...msg.sources]
-                                .sort((a, b) => (b.score || 0) - (a.score || 0))
-                                .map((source, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="source-item"
-                                    onClick={() => {
-                                      // If no source info, do nothing
-                                      if (!source.filename) return;
-                                    
-                                      // Check if it's a video (Videos usually don't need the registry proxy yet)
-                                      if (source.filename?.toLowerCase().endsWith(".mp4") || source.s3_url?.toLowerCase().endsWith(".mp4")) {
-                                        // Construct the proxy URL for the video
-                                        const videoProxyUrl = `${API}/chat/proxy-video?filename=${encodeURIComponent(source.filename)}`;
-                                        setActiveVideoUrl(videoProxyUrl);
-                                      }
-                                      // Handle PDFs using the new secure "Blind Proxy"
-                                      else {
-                                        // We only send the filename. The backend looks up the S3 URL.
-                                        const proxyUrl = `${API}/chat/proxy-pdf?filename=${encodeURIComponent(source.filename)}`;
-                                        
-                                        // Set the state to the proxy endpoint
-                                        setActivePdfUrl(proxyUrl);
-                                      }
-                                    }}
-                                    style={{
-                                      cursor: "pointer",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "6px",
-                                      padding: "4px 8px",
-                                      borderRadius: "4px",
-                                      transition: "background 0.2s"
-                                    }}
-                                    title={source.s3_url?.endsWith(".mp4") ? "Play Video" : "View Protected PDF"}
-                                  >
-                                    <File size={12} />
-                                    <span className="source-name">
-                                      {source.filename}
-                                    </span>
-                                    {source.page && (
-                                      <span className="source-page">
-                                        Page {source.page}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
-                          )}
+                      <div className="message-content-premium">
+                        <div className="message-text-premium">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="message assistant">
-                    <div className="message-avatar">
-                      <FileText size={20} />
-                    </div>
-                    <div className="message-content">
-                      <div className="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+
+                        {Array.isArray(msg.sources) && msg.sources.length > 0 && (
+                          <div className="sources-container-premium">
+                            <button
+                              className="sources-toggle-premium"
+                              onClick={() => setShowSources(showSources === index ? null : index)}
+                              data-testid={`sources-toggle-${index}`}
+                            >
+                              <File size={14} />
+                              {msg.sources.length} source{msg.sources.length > 1 ? 's' : ''}
+                              <ChevronRight
+                                size={14}
+                                style={{
+                                  transform: showSources === index ? "rotate(90deg)" : "none",
+                                  transition: "transform 0.2s",
+                                }}
+                              />
+                            </button>
+
+                            {showSources === index && (
+                              <div className="sources-list-premium">
+                                {[...msg.sources]
+                                  .sort((a, b) => (b.score || 0) - (a.score || 0))
+                                  .map((source, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="source-item-premium"
+                                      onClick={() => {
+                                        if (!source.filename) return;
+                                        if (source.filename?.toLowerCase().endsWith(".mp4") || source.s3_url?.toLowerCase().endsWith(".mp4")) {
+                                          const videoProxyUrl = `${API}/chat/proxy-video?filename=${encodeURIComponent(source.filename)}`;
+                                          setActiveVideoUrl(videoProxyUrl);
+                                        } else {
+                                          const proxyUrl = `${API}/chat/proxy-pdf?filename=${encodeURIComponent(source.filename)}`;
+                                          setActivePdfUrl(proxyUrl);
+                                        }
+                                      }}
+                                      data-testid={`source-${index}-${idx}`}
+                                    >
+                                      {source.filename?.toLowerCase().endsWith(".mp4") ? (
+                                        <Video size={12} />
+                                      ) : (
+                                        <File size={12} />
+                                      )}
+                                      <span className="source-name-premium">{source.filename}</span>
+                                      {source.page && <span className="source-page-premium">Page {source.page}</span>}
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                  ))}
+                  {isLoading && (
+                    <div className="message-premium assistant">
+                      <div className="message-avatar-premium">
+                        <Brain size={20} />
+                      </div>
+                      <div className="message-content-premium">
+                        <div className="typing-indicator-premium">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            </>
           )}
 
           {/* Input Area */}
-          <div className="input-area">
-            <div className="input-container">
+          <div className={`input-area-premium ${isProcessing ? 'disabled' : ''}`}>
+            <div className="input-container-premium">
               <Input
                 type="text"
-                placeholder="Ask about your documents..."
+                placeholder={isProcessing ? "Wait for file processing..." : "Ask anything about your documents..."}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading}
-                className="chat-input"
+                disabled={isLoading || isProcessing}
+                className="chat-input-premium"
+                data-testid="chat-input"
               />
               <Button
                 onClick={sendMessage}
-                disabled={isLoading || !inputMessage.trim()}
-                className="send-button"
+                disabled={isLoading || !inputMessage.trim() || isProcessing}
+                className="send-button-premium"
+                data-testid="send-button"
               >
                 <Send size={18} />
               </Button>
@@ -431,19 +607,9 @@ function ChatInterface() {
           </div>
         </div>
 
-
-
-        {/* Global Video Modal Overlay */}
-        <VideoModal 
-          url={activeVideoUrl} 
-          onClose={() => setActiveVideoUrl(null)} 
-        />
-
-        {/* Global Protected PDF Modal Overlay */}
-        <PdfModal 
-          url={activePdfUrl}
-          onClose={() => setActivePdfUrl(null)}
-        />
+        {/* Global Modals */}
+        <VideoModal url={activeVideoUrl} onClose={() => setActiveVideoUrl(null)} />
+        <PdfModal url={activePdfUrl} onClose={() => setActivePdfUrl(null)} />
       </div>
     </>
   );

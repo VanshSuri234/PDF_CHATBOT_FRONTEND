@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart3, MessageSquare, FileText, ArrowLeft, File } from "lucide-react";
+import { BarChart3, MessageSquare, FileText, ArrowLeft, File, Database, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
@@ -37,80 +37,86 @@ export default function AdminPanel({ onBack }) {
 
   if (loading) {
     return (
-      <div className="admin-container">
-        <div style={{ textAlign: "center", padding: "60px", color: "var(--text-secondary)" }}>
-          Loading dashboard...
+      <div className="admin-container-premium">
+        <div className="admin-loading">
+          <Activity size={40} className="animate-spin" />
+          <p>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-container">
-      <div className="admin-header">
-        <Button
-          onClick={onBack}
-          style={{
-            marginBottom: "20px",
-            background: "var(--definedge-blue)",
-            color: "white"
-          }}
-          data-testid="back-to-chat-button"
-        >
-          <ArrowLeft size={18} style={{ marginRight: "8px" }} />
-          Back to Chat
+    <div className="admin-container-premium">
+      <div className="admin-header-premium">
+        <Button onClick={onBack} className="back-button-premium" data-testid="back-to-chat-button">
+          <ArrowLeft size={18} />
+          <span>Back to Chat</span>
         </Button>
-        <h1 className="admin-title">PDF Assistant - Admin Dashboard</h1>
-        <p className="admin-subtitle">Monitor documents, chats, and usage analytics</p>
+        <div className="admin-title-section">
+          <h1 className="admin-title-premium">
+            <BarChart3 size={32} />
+            RootStock Admin Dashboard
+          </h1>
+          <p className="admin-subtitle-premium">Monitor documents, chats, and usage analytics</p>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="stats-grid">
-        <Card className="stat-card">
-          <div className="stat-label">
-            <FileText size={16} style={{ display: "inline", marginRight: "6px" }} />
-            Total Documents
+      <div className="stats-grid-premium">
+        <Card className="stat-card-premium">
+          <div className="stat-icon-premium documents">
+            <FileText size={24} />
           </div>
-          <div className="stat-value">{docStats?.unique_documents || 0}</div>
+          <div className="stat-info">
+            <div className="stat-value-premium">{docStats?.unique_documents || 0}</div>
+            <div className="stat-label-premium">Total Documents</div>
+          </div>
         </Card>
 
-        <Card className="stat-card">
-          <div className="stat-label">
-            <File size={16} style={{ display: "inline", marginRight: "6px" }} />
-            Total Chunks
+        <Card className="stat-card-premium">
+          <div className="stat-icon-premium chunks">
+            <Database size={24} />
           </div>
-          <div className="stat-value">{docStats?.total_chunks || 0}</div>
+          <div className="stat-info">
+            <div className="stat-value-premium">{docStats?.total_chunks || 0}</div>
+            <div className="stat-label-premium">Total Chunks</div>
+          </div>
         </Card>
 
-        <Card className="stat-card">
-          <div className="stat-label">
-            <MessageSquare size={16} style={{ display: "inline", marginRight: "6px" }} />
-            Total Sessions
+        <Card className="stat-card-premium">
+          <div className="stat-icon-premium sessions">
+            <MessageSquare size={24} />
           </div>
-          <div className="stat-value">{stats?.total_sessions || 0}</div>
+          <div className="stat-info">
+            <div className="stat-value-premium">{stats?.total_sessions || 0}</div>
+            <div className="stat-label-premium">Total Sessions</div>
+          </div>
         </Card>
 
-        <Card className="stat-card">
-          <div className="stat-label">
-            <BarChart3 size={16} style={{ display: "inline", marginRight: "6px" }} />
-            Total Messages
+        <Card className="stat-card-premium">
+          <div className="stat-icon-premium messages">
+            <BarChart3 size={24} />
           </div>
-          <div className="stat-value">{stats?.total_messages || 0}</div>
+          <div className="stat-info">
+            <div className="stat-value-premium">{stats?.total_messages || 0}</div>
+            <div className="stat-label-premium">Total Messages</div>
+          </div>
         </Card>
       </div>
 
       {/* Documents Section */}
       {docStats?.document_names && docStats.document_names.length > 0 && (
-        <div className="admin-section">
-          <h2 className="section-header">
-            <FileText size={24} style={{ display: "inline", marginRight: "10px", color: "var(--definedge-gold)" }} />
+        <div className="admin-section-premium">
+          <h2 className="section-header-premium">
+            <FileText size={24} />
             Indexed Documents
           </h2>
-          <div className="stock-mentions-list">
+          <div className="documents-grid-premium">
             {docStats.document_names.map((docName, index) => (
-              <div key={index} className="stock-mention-badge" data-testid={`doc-${index}`}>
-                <File size={14} style={{ marginRight: "6px" }} />
-                {docName}
+              <div key={index} className="document-card-premium" data-testid={`doc-${index}`}>
+                <File size={16} />
+                <span>{docName}</span>
               </div>
             ))}
           </div>
@@ -118,52 +124,41 @@ export default function AdminPanel({ onBack }) {
       )}
 
       {/* Recent Chats Table */}
-      <div className="admin-section">
-        <h2 className="section-header">
-          <MessageSquare size={24} style={{ display: "inline", marginRight: "10px", color: "var(--definedge-gold)" }} />
+      <div className="admin-section-premium">
+        <h2 className="section-header-premium">
+          <MessageSquare size={24} />
           Recent Chat Sessions
         </h2>
-        <ScrollArea style={{ height: "500px", borderRadius: "12px" }}>
-          <table className="chat-logs-table">
-            <thead>
-              <tr>
-                <th>Session ID</th>
-                <th>Title</th>
-                <th>Messages</th>
-                <th>Preview</th>
-                <th>Last Activity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chats.map((chat) => (
-                <tr key={chat.id} data-testid={`chat-log-${chat.id}`}>
-                  <td style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {chat.id.substring(0, 8)}...
-                  </td>
-                  <td style={{ fontWeight: 600 }}>{chat.title}</td>
-                  <td>
-                    <span style={{
-                      padding: "4px 10px",
-                      background: "var(--definedge-blue)",
-                      color: "white",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 700
-                    }}>
-                      {chat.message_count || 0}
-                    </span>
-                  </td>
-                  <td style={{ maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {chat.preview}
-                  </td>
-                  <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-                    {new Date(chat.last_message_at).toLocaleString()}
-                  </td>
+        <div className="table-container-premium">
+          <ScrollArea className="table-scroll">
+            <table className="admin-table-premium">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Title</th>
+                  <th>Messages</th>
+                  <th>Preview</th>
+                  <th>Last Activity</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollArea>
+              </thead>
+              <tbody>
+                {chats.map((chat) => (
+                  <tr key={chat.id} data-testid={`chat-log-${chat.id}`}>
+                    <td className="session-id">{chat.id.substring(0, 8)}...</td>
+                    <td className="session-title-col">{chat.title}</td>
+                    <td>
+                      <span className="message-count-badge">{chat.message_count || 0}</span>
+                    </td>
+                    <td className="preview-col">{chat.preview}</td>
+                    <td className="timestamp-col">
+                      {new Date(chat.last_message_at).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );
