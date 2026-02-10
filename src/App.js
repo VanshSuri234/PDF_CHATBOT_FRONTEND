@@ -12,7 +12,7 @@ import {
   Send, Plus, MessageSquare, FileText, Upload, Trash2,
   Sparkles, Settings, File, ChevronRight, Loader2,
   X, CheckCircle, AlertCircle, Menu, ChevronLeft, Video,
-  Cloud, Zap, Brain
+  Cloud, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminPanel from "./AdminPanel";
@@ -23,6 +23,9 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 const API = `${BACKEND_URL}/api`;
+
+// RootStock Logo URL
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_31851d0f-4544-4a8d-a597-0cfb66c6e5b2/artifacts/a8lbcjdd_RootStock.webp";
 
 // --- Document API Functions ---
 async function uploadPDF(file) {
@@ -57,6 +60,7 @@ const VideoModal = ({ url, onClose }) => {
           key={url}
           className="video-player"
           controls
+          preload = "auto"
           controlsList="nodownload"
           onContextMenu={(e) => e.preventDefault()}
           autoPlay
@@ -233,11 +237,13 @@ function ChatInterface() {
 
   const selectSession = async (session) => {
     setCurrentSession(session);
+    setMessages([]);
     try {
       const response = await axios.get(`${API}/chat/history/${session.id}`);
       setMessages(response.data);
     } catch (error) {
       console.error("Error loading messages:", error);
+      setMessages([]);
     }
   };
 
@@ -341,7 +347,7 @@ function ChatInterface() {
           <div className="sidebar-header-premium">
             <div className="brand-premium">
               <div className="brand-icon-premium">
-                <Brain size={24} />
+                <img src={LOGO_URL} alt="RootStock" />
               </div>
               {!sidebarCollapsed && (
                 <div className="brand-text">
@@ -417,7 +423,7 @@ function ChatInterface() {
             <div className="welcome-screen-premium">
               <div className="welcome-content-premium">
                 <div className="welcome-icon-premium">
-                  <Sparkles size={48} />
+                  <img src={LOGO_URL} alt="RootStock" />
                   <div className="icon-glow"></div>
                 </div>
                 <h2 className="welcome-title-premium">Welcome to RootStock AI</h2>
@@ -465,7 +471,7 @@ function ChatInterface() {
             <>
               <div className="chat-header-premium">
                 <div className="chat-header-left">
-                  <Zap size={20} />
+                  <img src={LOGO_URL} alt="RootStock" />
                   <span>{currentSession?.title || 'Chat Session'}</span>
                 </div>
                 <div className="chat-header-right">
@@ -497,7 +503,7 @@ function ChatInterface() {
                         {msg.role === "user" ? (
                           <div className="user-avatar-premium">You</div>
                         ) : (
-                          <Brain size={20} />
+                          <img src={LOGO_URL} alt="RootStock AI" />
                         )}
                       </div>
 
@@ -565,7 +571,7 @@ function ChatInterface() {
                   {isLoading && (
                     <div className="message-premium assistant">
                       <div className="message-avatar-premium">
-                        <Brain size={20} />
+                        <img src={LOGO_URL} alt="RootStock AI" />
                       </div>
                       <div className="message-content-premium">
                         <div className="typing-indicator-premium">
@@ -587,7 +593,7 @@ function ChatInterface() {
             <div className="input-container-premium">
               <Input
                 type="text"
-                placeholder={isProcessing ? "Wait for file processing..." : "Ask anything about your documents..."}
+                placeholder={isProcessing ? "Processing... please wait" : "Ask anything about your documents..."}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
